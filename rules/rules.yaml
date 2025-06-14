@@ -1,0 +1,16 @@
+- id: 1001
+  name: TCP SYN Flood
+  description: Detects SYN floods (many SYNs, no ACKs)
+  conditions:
+    protocol: TCP
+    flags: SYN
+    packet_threshold: 50
+    time_window: 10  # in seconds
+
+- id: 1002
+  name: Port Scan
+  description: Detects multiple port hits from same IP
+  conditions:
+    protocol: TCP
+    unique_ports_threshold: 10
+    time_window: 5

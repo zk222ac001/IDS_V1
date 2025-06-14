@@ -1,0 +1,5 @@
+scapy
+rich
+pyyaml
+streamlit
+pandas
