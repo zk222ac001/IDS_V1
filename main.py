@@ -1,16 +1,6 @@
 import logging
-import sys
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("ids.log"),               # log to file
-        logging.StreamHandler(sys.stdout)             # also print to console
-    ]
-)
-
+from logger_config.logger import setup_log
+setup_log() # Configure logging
 from core.packet_sniffer import start_sniffing
 from core.flow_builder import FlowBuilder
 from core.signature_engine import SignatureEngine
