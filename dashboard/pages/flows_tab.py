@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 GEOIP_DB_PATH = "../database/GeoLite2-City.mmdb"
 
 # Cache GeoIP lookup for performance
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def get_geoip(ip):
     try:
         with geoip2.database.Reader(GEOIP_DB_PATH) as reader:
@@ -104,14 +104,14 @@ def render(flows_df, tab):
                     "lon": geo["longitude"],
                     "country": geo["country"]
                 })
-        st.write("Geo Data Preview", geo_data)
-        st.stop()
+        #st.write("Geo Data Preview", geo_data)
+        #st.stop()
         if geo_data:
             geo_df = pd.DataFrame(geo_data)
         
-        if not geo_data:
-            st.warning("No valid GeoIP data extracted")
-            return        
+        #if not geo_data:
+            #st.warning("No valid GeoIP data extracted")
+            #return        
 
             if use_cluster:
                 # 3D Hexagon layer

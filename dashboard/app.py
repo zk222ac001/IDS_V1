@@ -3,24 +3,27 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-from utils.db_utils import load_data
-from config.setting import intel
-from utils.formatter import Change_time_stamp_tab
 import pages.flows_tab as flows_tab
 import pages.alerts_tab as alerts_tab
 import pages.ml_alerts_tab as ml_alerts_tab
 import pages.enrichment_tab as enrichment_tab
 import pages.graph_tab as graph_tab
+import pages.geo_map_tab as geo_map_tab
 from utils.loading_data import loading_data_tabs
+from streamlit_autorefresh import st_autorefresh
+from utils.db_utils import load_data
+from config.setting import intel
+from utils.formatter import Change_time_stamp_tab
+
+
 
 try:
     # Load tables from DB
     result = loading_data_tabs()
     if result is not None:
-     flows_df, alerts_df, ml_alerts_df = result
+        flows_df, alerts_df, ml_alerts_df = result
     else:
-     st.error("❌ Data loading failed completely.")
+        st.error("❌ Data loading failed completely.")
 
     # Check if any DataFrame failed to load (i.e., is None)
     if flows_df is None or alerts_df is None or ml_alerts_df is None:
@@ -38,7 +41,8 @@ try:
             "🚨 Signature-Based Alerts", 
             "🧠 ML-Based Anomaly Alerts", 
             "🌍 Threat Intelligence Enrichment", 
-            "📊 Graph View"
+            "📊 Graph View",
+            "🌍 GeoIP Map"
         ])
 
         # Render each tab inside try-blocks
@@ -67,6 +71,11 @@ try:
         #     graph_tab.render(alerts_df, ml_alerts_df, intel, tabs[4])
         # except Exception as e:
         #     st.error(f"❌ Failed to render Graph View tab: {e}")
+        
+        #try:
+              #geo_map_tab.render(flows_df, tabs[5])
+        #except Exception as e:
+              #st.error(f"❌ Failed to render Graph Mab tab: {e}")
 
 except Exception as e:
     st.exception(f"💥 Critical error during initialization: {e}")
