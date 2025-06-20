@@ -15,8 +15,6 @@ from utils.db_utils import load_data
 from config.setting import intel
 from utils.formatter import Change_time_stamp_tab
 
-
-
 try:
     # Load tables from DB
     result = loading_data_tabs()
@@ -38,9 +36,9 @@ try:
         # Create Main Tabs
         tabs = st.tabs([
             "🌐 Flows", 
-            "🚨 Signature-Based Alerts", 
-            "🧠 ML-Based Anomaly Alerts", 
-            "🌍 Threat Intelligence Enrichment", 
+            "🚨 SBA (Alerts)", 
+            "🧠 MLAA (ML Alerts)", 
+            "🌍 TIE (Threat Intel)", 
             "📊 Graph View",
             "🌍 GeoIP Map"
         ])

@@ -82,6 +82,20 @@ def render(flows_df, tab_container):
 
         filtered["Risk"] = assign_risk_scores(filtered)
 
+        # ========== GEOIP ENRICHMENT ==========
+        geo_df = enrich_geo_data(filtered["src_ip"].unique())
+
+        # === Blocked IPs by Country ===
+        with st.sidebar:
+            st.markdown("### 🔒 Auto-Block Countries")
+            blocked_countries = st.multiselect("Select Countries to Block", options=sorted(geo_df["country"].unique()), key="blocked_countries")
+
+        blocked_ips = geo_df[geo_df["country"].isin(blocked_countries)]["ip"].tolist()
+        filtered = filtered[~filtered["src_ip"].isin(blocked_ips)]
+
+        if blocked_ips:
+            st.warning(f"🚫 {len(blocked_ips)} IPs blocked from: {', '.join(blocked_countries)}")
+
         # ========== TAB 1: FLOW DASHBOARD ==========
         with tab1:
             st.markdown("<h2 style='color:#650D61;'>📡 Network Flows Dashboard</h2>", unsafe_allow_html=True)
@@ -127,34 +141,46 @@ def render(flows_df, tab_container):
             )
 
             use_cluster = st.toggle("📊 Enable 3D Clustering", value=False)
+            use_heatmap = st.toggle("🔥 Enable Heatmap View", value=False)
 
-            geo_df = enrich_geo_data(filtered["src_ip"].unique())
             if geo_df.empty:
                 st.warning("❌ No valid GeoIP data for current flows.")
                 return
 
-            if use_cluster:
-                layer = pdk.Layer(
-                    "HexagonLayer",
+            if use_heatmap:
+                heatmap_layer = pdk.Layer(
+                    "HeatmapLayer",
                     data=geo_df,
                     get_position='[lon, lat]',
-                    radius=100000,
-                    elevation_scale=100,
-                    elevation_range=[0, 3000],
-                    extruded=True,
-                    pickable=True,
-                    coverage=1
+                    aggregation='MEAN',
+                    threshold=0.1,
+                    intensity=1
                 )
+                layers = [heatmap_layer]
             else:
-                geo_df["color"] = geo_df["country"].apply(color_from_country)
-                layer = pdk.Layer(
-                    "ScatterplotLayer",
-                    data=geo_df,
-                    get_position='[lon, lat]',
-                    get_color="color",
-                    get_radius=60000,
-                    pickable=True
-                )
+                if use_cluster:
+                    layer = pdk.Layer(
+                        "HexagonLayer",
+                        data=geo_df,
+                        get_position='[lon, lat]',
+                        radius=100000,
+                        elevation_scale=100,
+                        elevation_range=[0, 3000],
+                        extruded=True,
+                        pickable=True,
+                        coverage=1
+                    )
+                else:
+                    geo_df["color"] = geo_df["country"].apply(color_from_country)
+                    layer = pdk.Layer(
+                        "ScatterplotLayer",
+                        data=geo_df,
+                        get_position='[lon, lat]',
+                        get_color="color",
+                        get_radius=60000,
+                        pickable=True
+                    )
+                layers = [layer]
 
             tooltip = {
                 "html": "<b>IP:</b> {ip}<br><b>Country:</b> {country}",
@@ -169,6 +195,6 @@ def render(flows_df, tab_container):
                     zoom=1.5,
                     pitch=40 if use_cluster else 0,
                 ),
-                layers=[layer],
+                layers=layers,
                 tooltip=tooltip
             ))
