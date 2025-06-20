@@ -95,7 +95,7 @@ class FlowBuilder:
             """, (flow["src_ip"], flow["dst_ip"], flow["protocol"], pkt_cnt, total_sz, now))
 
         self._safe_commit(conn)
-        
+                
         # ✅ Call Anomaly Detector
         self.anomaly_detector.score_flow(flow)
 

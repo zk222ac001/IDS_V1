@@ -5,42 +5,45 @@ import geoip2.database
 import logging
 from streamlit_autorefresh import st_autorefresh
 from hashlib import sha256
+from datetime import datetime
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
-GEOIP_DB_PATH = "../database/GeoLite2-City.mmdb"
+GEOIP_CITY_PATH = "../database/GeoLite2-City.mmdb"
+GEOIP_ASN_PATH = "../database/GeoLite2-ASN.mmdb"
 
-# === Persistent GeoIP Reader ===
 @st.cache_resource
-def get_geoip_reader():
-    return geoip2.database.Reader(GEOIP_DB_PATH)
+def get_geoip_readers():
+    return {
+        "city": geoip2.database.Reader(GEOIP_CITY_PATH),
+        "asn": geoip2.database.Reader(GEOIP_ASN_PATH)
+    }
 
-# === Cached GeoIP Enrichment ===
 @st.cache_data(show_spinner=True)
 def enrich_geo_data(unique_ips):
     geo_data = []
-    reader = get_geoip_reader()
+    readers = get_geoip_readers()
     for ip in unique_ips:
         try:
-            response = reader.city(ip)
-            if response.location.latitude and response.location.longitude:
+            city_resp = readers["city"].city(ip)
+            asn_resp = readers["asn"].asn(ip)
+            if city_resp.location.latitude and city_resp.location.longitude:
                 geo_data.append({
                     "ip": ip,
-                    "lat": response.location.latitude,
-                    "lon": response.location.longitude,
-                    "country": response.country.name
+                    "lat": city_resp.location.latitude,
+                    "lon": city_resp.location.longitude,
+                    "country": city_resp.country.name,
+                    "asn": f"{asn_resp.autonomous_system_organization} (AS{asn_resp.autonomous_system_number})"
                 })
         except Exception as e:
             logging.warning(f"GeoIP failed for {ip}: {e}")
     return pd.DataFrame(geo_data)
 
-# === Country to Color Hashing ===
 def color_from_country(country):
     h = sha256(country.encode()).digest()
     return [h[0], h[1], h[2]]
 
-# === Risk Score via Cut ===
 def assign_risk_scores(df):
     return pd.cut(
         df["packet_count"],
@@ -48,44 +51,39 @@ def assign_risk_scores(df):
         labels=["🟢 Low", "🟠 Medium", "🔴 High"]
     )
 
-# === Main Render Function ===
 def render(flows_df, tab_container):
     with tab_container:
-        tab1, tab2 = st.tabs(["📊 Flow Dashboard", "🗺️ GeoIP Map"])
+        tab1, tab2, tab3 = st.tabs(["📊 Flow Dashboard", "🗺️ GeoIP Map", "📈 Threat Graphs"])
 
-        # ========== SIDEBAR ==========
         with st.sidebar:
             st.header("🔧 Filters")
             query = st.text_input("🔍 Search", "", key="search_flows")
-
             protocols = ["All"] + sorted(flows_df["protocol"].dropna().unique().tolist())
             selected_protocol = st.selectbox("🧭 Protocol", protocols)
-
             max_packets = int(flows_df["packet_count"].max())
             min_packets = st.slider("📊 Min Packets", 0, max_packets, 0)
-
-            refresh_toggle = st.toggle("🔁 Auto-refresh every 30s", value=False)
+            refresh_toggle = st.checkbox("🔁 Auto-refresh every 30s", value=False)
 
         if refresh_toggle:
             st_autorefresh(interval=30000, limit=None, key="refresh")
 
-        # ========== FILTERING ==========
         filtered = flows_df.copy()
         if selected_protocol != "All":
             filtered = filtered[filtered["protocol"] == selected_protocol]
         filtered = filtered[filtered["packet_count"] >= min_packets]
 
         if query:
-            query = query.lower()
-            mask = flows_df.astype(str).apply(lambda col: col.str.lower().str.contains(query))
+            query_lower = query.lower()
+            mask = filtered.astype(str).apply(lambda col: col.str.lower().str.contains(query_lower))
             filtered = filtered[mask.any(axis=1)]
 
-        filtered["Risk"] = assign_risk_scores(filtered)
+        if 'timestamp' in filtered.columns:
+            filtered['timestamp'] = pd.to_datetime(filtered['timestamp'], errors='coerce')
 
-        # ========== GEOIP ENRICHMENT ==========
+        filtered["Risk"] = assign_risk_scores(filtered)
+        filtered["Bytes (MB)"] = filtered["total_size"] / (1024 * 1024)
         geo_df = enrich_geo_data(filtered["src_ip"].unique())
 
-        # === Blocked IPs by Country ===
         with st.sidebar:
             st.markdown("### 🔒 Auto-Block Countries")
             blocked_countries = st.multiselect("Select Countries to Block", options=sorted(geo_df["country"].unique()), key="blocked_countries")
@@ -96,7 +94,10 @@ def render(flows_df, tab_container):
         if blocked_ips:
             st.warning(f"🚫 {len(blocked_ips)} IPs blocked from: {', '.join(blocked_countries)}")
 
-        # ========== TAB 1: FLOW DASHBOARD ==========
+        filtered = filtered.merge(geo_df[["ip", "asn", "country"]], left_on="src_ip", right_on="ip", how="left")
+        filtered.rename(columns={"asn": "ASN", "country": "Country"}, inplace=True)
+        filtered.drop(columns=["ip"], inplace=True)
+
         with tab1:
             st.markdown("<h2 style='color:#650D61;'>📡 Network Flows Dashboard</h2>", unsafe_allow_html=True)
 
@@ -104,29 +105,31 @@ def render(flows_df, tab_container):
                 st.info("🚫 No flow data available after filtering.")
                 return
 
-            # 📈 Metrics
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             col1.metric("🌐 Total Flows", len(filtered))
             col2.metric("📦 Avg Packets", f"{filtered['packet_count'].mean():.2f}")
-            col3.metric("💾 Avg Size (Bytes)", f"{filtered['total_size'].mean():.2f}")
+            col3.metric("💾 Avg Size (MB)", f"{filtered['Bytes (MB)'].mean():.2f}")
+            col4.metric("🌍 Unique IPs", filtered['src_ip'].nunique())
 
-            # 📋 Flow Table
-            st.caption(f"🔎 Showing {len(filtered)} result(s)" + (f" for '{query}'" if query else ""))
+            display_df = filtered[["timestamp", "src_ip", "dst_ip", "protocol", "packet_count", "Bytes (MB)", "Risk", "ASN", "Country"]].copy()
+            display_df["timestamp"] = display_df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+            st.caption(f"🔎 Showing {len(display_df)} result(s)" + (f" for '{query}'" if query else ""))
             st.dataframe(
-                filtered.head(200).style.bar(
-                    subset=["packet_count", "total_size"], color="#650D61"
+                display_df.sort_values("timestamp", ascending=False).head(200).style.bar(
+                    subset=["packet_count", "Bytes (MB)"], color="#650D61"
                 ),
                 use_container_width=True
             )
 
-            # 📥 CSV Export (cached string)
             @st.cache_data
             def get_csv_string(df):
-                return df.to_csv(index=False)
+                csv_df = df.copy()
+                csv_df["timestamp"] = pd.to_datetime(csv_df["timestamp"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M:%S")
+                return csv_df.to_csv(index=False)
 
-            st.download_button("📥 Download Filtered Flows", get_csv_string(filtered), "flows.csv")
+            st.download_button("📥 Download Filtered Flows", get_csv_string(display_df), "flows.csv")
 
-        # ========== TAB 2: GEOIP MAP ==========
         with tab2:
             st.markdown("<h2 style='color:#650D61;'>🗺️ Flow Source GeoIP Map</h2>", unsafe_allow_html=True)
 
@@ -140,8 +143,8 @@ def render(flows_df, tab_container):
                 format_func=lambda s: s.split("/")[-1].replace("-v9", "").capitalize()
             )
 
-            use_cluster = st.toggle("📊 Enable 3D Clustering", value=False)
-            use_heatmap = st.toggle("🔥 Enable Heatmap View", value=False)
+            use_cluster = st.checkbox("📊 Enable 3D Clustering", value=False)
+            use_heatmap = st.checkbox("🔥 Enable Heatmap View", value=False)
 
             if geo_df.empty:
                 st.warning("❌ No valid GeoIP data for current flows.")
@@ -198,3 +201,29 @@ def render(flows_df, tab_container):
                 layers=layers,
                 tooltip=tooltip
             ))
+
+        with tab3:
+            st.markdown("<h2 style='color:#650D61;'>📈 Threat Graphs</h2>", unsafe_allow_html=True)
+
+            if filtered.empty:
+                st.info("🚫 No Threat Graphs data available after filtering.")
+                return
+
+            st.markdown("### ⏱️ Flow Activity Over Time")
+            timeline_df = (
+                filtered.groupby(filtered['timestamp'].dt.floor('min'))
+                .size()
+                .reset_index(name="Flow Count")
+            )
+            if not timeline_df.empty:
+                st.area_chart(timeline_df.rename(columns={"timestamp": "Time"}).set_index("Time"))
+            else:
+                st.info("No flow timeline data available.")
+
+            st.markdown("### 🌍 Threat Intensity by Country")
+            country_counts = filtered["Country"].value_counts().reset_index()
+            country_counts.columns = ["Country", "Flow Count"]
+            if not country_counts.empty:
+                st.bar_chart(country_counts.set_index("Country"))
+            else:
+                st.info("No country-level flow data available.")
