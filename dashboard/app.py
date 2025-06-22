@@ -41,7 +41,7 @@ try:
             "🌍 TIE (Threat Intel)", 
             "📊 Graph View",
             "🌍 GeoIP Map"
-        ])
+        ]) 
 
         # Render each tab inside try-blocks
         try:
@@ -49,10 +49,10 @@ try:
         except Exception as e:
             st.error(f"❌ Failed to render Flows tab: {e}")
 
-        #try:
-        #    alerts_tab.render(alerts_df, tabs[1])
-        #except Exception as e:
-        #   st.error(f"❌ Failed to render Signature-Based Alerts tab: {e}")
+        try:
+            alerts_tab.render(alerts_df, tabs[1])
+        except Exception as e:
+            st.error(f"❌ Failed to render Signature-Based Alerts tab: {e}")
 
         #try:
         #   ml_alerts_tab.render(ml_alerts_df, tabs[2])

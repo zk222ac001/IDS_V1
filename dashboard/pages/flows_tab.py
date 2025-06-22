@@ -5,7 +5,6 @@ import geoip2.database
 import logging
 from streamlit_autorefresh import st_autorefresh
 from hashlib import sha256
-from datetime import datetime
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +53,7 @@ def assign_risk_scores(df):
 def render(flows_df, tab_container):
     with tab_container:
         tab1, tab2, tab3 = st.tabs(["📊 Flow Dashboard", "🗺️ GeoIP Map", "📈 Threat Graphs"])
-
+        
         with st.sidebar:
             st.header("🔧 Filters")
             query = st.text_input("🔍 Search", "", key="search_flows")
@@ -105,12 +104,15 @@ def render(flows_df, tab_container):
                 st.info("🚫 No flow data available after filtering.")
                 return
 
+            # Total Counts ...........................................................
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("🌐 Total Flows", len(filtered))
             col2.metric("📦 Avg Packets", f"{filtered['packet_count'].mean():.2f}")
             col3.metric("💾 Avg Size (MB)", f"{filtered['Bytes (MB)'].mean():.2f}")
-            col4.metric("🌍 Unique IPs", filtered['src_ip'].nunique())
+            col4.metric("🌍 Unique IPs", filtered['src_ip'].nunique())            
 
+            # 📋 Flow Table .........................................................            
+            
             display_df = filtered[["timestamp", "src_ip", "dst_ip", "protocol", "packet_count", "Bytes (MB)", "Risk", "ASN", "Country"]].copy()
             display_df["timestamp"] = display_df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -202,13 +204,14 @@ def render(flows_df, tab_container):
                 tooltip=tooltip
             ))
 
-        with tab3:
+        with tab3:            
             st.markdown("<h2 style='color:#650D61;'>📈 Threat Graphs</h2>", unsafe_allow_html=True)
 
             if filtered.empty:
                 st.info("🚫 No Threat Graphs data available after filtering.")
                 return
-
+                        
+            # ========= Flow Timeline Chart =========
             st.markdown("### ⏱️ Flow Activity Over Time")
             timeline_df = (
                 filtered.groupby(filtered['timestamp'].dt.floor('min'))
@@ -220,6 +223,7 @@ def render(flows_df, tab_container):
             else:
                 st.info("No flow timeline data available.")
 
+            # ========= Threat Intensity by Country =========
             st.markdown("### 🌍 Threat Intensity by Country")
             country_counts = filtered["Country"].value_counts().reset_index()
             country_counts.columns = ["Country", "Flow Count"]

@@ -51,8 +51,7 @@ def alert(flow):
     f"Packet Count: {flow['packet_count']}\n"
     f"Total Size: {flow['total_size']} bytes\n"
     f"Timestamp: {time.ctime(flow['timestamp'])}"
-)
-    
+    )    
    # Slack & Email -- Enable later on ----------------------------------------------   
     send_slack_alert(message)
     send_email_alert("IDS ALERT: Suspicious Flow", message)

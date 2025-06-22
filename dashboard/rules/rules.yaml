@@ -1,0 +1,14 @@
+- conditions:
+    packet_threshold: 11
+    protocol: TCP
+    time_window: 60
+  description: Detects SYN floods (many SYNs, no ACKs)
+  name: ' TCP SYN Flood'
+  severity: low
+- conditions:
+    packet_threshold: 16
+    protocol: UDP
+    time_window: 60
+  description: ' Detects multiple port hits from same IP'
+  name: Port Scan
+  severity: low

@@ -13,8 +13,8 @@ class AlertEngine:
             return {
                 "type": "PORT_SCAN",
                 "description": f"High packet count from {flow_key[0]}",
-                "source_ip": flow_key[0],
-                "destination_ip": flow_key[1],
+                "src_ip": flow_key[0],
+                "dst_ip": flow_key[1],
             }
         return None
 
@@ -37,8 +37,8 @@ class AlertEngine:
                 alert = {
                     "type": "THREAT_INTEL_MATCH",
                     "description": f"Threat intelligence match for flow {flow_key[0]} -> {flow_key[1]}",
-                    "source_ip": flow_key[0],
-                    "destination_ip": flow_key[1],
+                    "src_ip": flow_key[0],
+                    "dst_ip": flow_key[1],
                 }
             alert["tags"] = tags
             alert["score"] = score

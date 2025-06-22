@@ -26,7 +26,7 @@ def apply_rules(flow_key, flow_data):
                 alerts.append({
                     "type": rule["name"],
                     "description": rule["description"],
-                    "source_ip": flow_key[0],
-                    "destination_ip": flow_key[1]
+                    "src_ip": flow_key[0],
+                    "dst_ip": flow_key[1]
                 })
     return alerts
