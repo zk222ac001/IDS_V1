@@ -5,12 +5,16 @@ from email.mime.text import MIMEText # Formats the email message body.
 import json #Formats payloads for Slack/API as JSON.
 import time
 
+ENABLE_API_ALERTING = False
 # Customize
 # Slack Incoming Webhook URL (needs to be created in Slack).
 SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/XXXX/YYYY/ZZZZ'
-EMAIL_FROM = 'ids@yourdomain.com' # Sender address for IDS alert emails.
-EMAIL_TO = ['you@example.com'] # List of recipients for email alerts.
-SMTP_SERVER = 'smtp.yourdomain.com' # Your organization's SMTP server hostname or IP.
+SMTP_SERVER = 'smtp.gmail.com'
+SMTP_PORT = 587
+EMAIL_FROM = 'zk222ac@gmail.com'
+EMAIL_TO = ['rema4305@gmail.com, reema_rizwan01@gmail.com']
+EMAIL_USERNAME = 'zk222ac@gmail.com'
+EMAIL_PASSWORD = 'Zk1!Ln2@Zl3#'
 API_ALERT_ENDPOINT = 'http://localhost:8000/api/alert' # HTTP endpoint that receives alert JSON (useful for integration with dashboards, SIEMs, etc.).
 
 # Sends a plain text message to a Slack channel via Webhook.
@@ -28,15 +32,23 @@ def send_email_alert(subject, message):
         msg['Subject'] = subject
         msg['From'] = EMAIL_FROM
         msg['To'] = ", ".join(EMAIL_TO)
-        with smtplib.SMTP(SMTP_SERVER) as server:
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.ehlo()                  # Identify ourselves to the server
+            server.starttls()              # Secure the connection
+            server.ehlo()                  # Re-identify after securing
+            server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
+            print("[EMAIL ALERT] Sent successfully.")
     except Exception as e:
         print(f"Email alert error: {e}")
 
 # 🌐 API Alert Function
 def send_api_alert(data):
     try:
-        requests.post(API_ALERT_ENDPOINT, json=data)
+        if ENABLE_API_ALERTING:         
+            requests.post(API_ALERT_ENDPOINT, json=data)
+                    
     except Exception as e:
         print(f"API alert error: {e}")
 

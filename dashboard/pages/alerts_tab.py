@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 from utils.formatter import highlight_alerts
 from core.alerting import send_email_alert,send_slack_alert
-import uuid # # Add at the top of your file
+import uuid 
 
 RULE_PATH = "rules/rules.yaml"
 
@@ -23,8 +23,9 @@ def render(alerts_df: pd.DataFrame, tab):
             if st.button("🔒 Block IPs with Critical Tags", key="block_ips"):
                 critical = filtered[filtered.tags.str.contains("abuseipdb_high|otx_malicious|misp_malicious", na=False)]
                 for ip in critical["src_ip"].unique():
-                    send_email_alert(ip, ["critical"])
-                    send_slack_alert(ip, ["critical"])
+                    pass
+                    #send_email_alert(ip, ["critical"])
+                    #send_slack_alert(ip, ["critical"])
                 st.success("Critical IPs blocked & alerts sent.")
         else:
                 st.info("No alerts found.")

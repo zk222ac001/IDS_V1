@@ -5,6 +5,7 @@ import queue
 import os
 import sys
 from ml.anomaly_detector import AnomalyDetector
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 class FlowBuilder:
@@ -30,8 +31,8 @@ class FlowBuilder:
                     src_ip TEXT,
                     dst_ip TEXT,
                     protocol TEXT,
-                    packet_count INTEGER,
-                    total_size INTEGER,
+                    packet_count INTEGER DEFAULT 0,
+                    total_size INTEGER DEFAULT 0,
                     timestamp REAL
                 )
             ''')
@@ -70,6 +71,8 @@ class FlowBuilder:
 
         if row:
             fid, pkt_cnt, total_sz, start_ts = row
+            pkt_cnt = pkt_cnt or 0
+            total_sz = total_sz or 0
             pkt_cnt += 1
             total_sz += flow["packet_size"]
             flow.update({
@@ -95,7 +98,7 @@ class FlowBuilder:
             """, (flow["src_ip"], flow["dst_ip"], flow["protocol"], pkt_cnt, total_sz, now))
 
         self._safe_commit(conn)
-                
+
         # ✅ Call Anomaly Detector
         self.anomaly_detector.score_flow(flow)
 

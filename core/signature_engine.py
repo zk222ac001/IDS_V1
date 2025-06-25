@@ -1,7 +1,6 @@
 import yaml, os, sqlite3, time , sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from alerting import send_api_alert, send_email_alert, send_slack_alert
-#from alert_formatter import format_alert_payload
+from core.alerting import send_api_alert, send_email_alert, send_slack_alert
 from dashboard.utils.alert_formatter import format_alert_payload
   
 class SignatureEngine:
@@ -17,8 +16,8 @@ class SignatureEngine:
     def _init_db(self):
         self.conn.execute('''CREATE TABLE IF NOT EXISTS alerts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT, description TEXT, src_ip TEXT,
-            dst_ip TEXT, protocol TEXT, timestamp REAL, severity TEXT
+            type TEXT, description TEXT, source_ip TEXT,
+            destination_ip TEXT, protocol TEXT, timestamp REAL, severity TEXT
         )''')
         self.conn.execute('''CREATE TABLE IF NOT EXISTS flows (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,14 +69,13 @@ class SignatureEngine:
         severity = rule.get("severity", "medium")
         alert_payload = format_alert_payload(rule['name'], rule['description'], flow, timestamp, severity)
 
-        self.conn.execute('''INSERT INTO alerts (type, description, src_ip, dst_ip, protocol, timestamp, severity)
+        self.conn.execute('''INSERT INTO alerts (type, description, source_ip, destination_ip, protocol, timestamp, severity)
                              VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                          (alert_payload['type'], alert_payload['description'], alert_payload['src_ip'],
-                           alert_payload['dst_ip'], alert_payload['protocol'], alert_payload['timestamp'],
+                          (alert_payload['type'], alert_payload['description'], alert_payload['source_ip'],
+                           alert_payload['destination_ip'], alert_payload['protocol'], alert_payload['timestamp'],
                            alert_payload['severity']))
         self.conn.commit()
-
-        # Notify
+        # Enable ...........................
         send_api_alert(alert_payload)
         send_slack_alert(f"[Signature Alert] {alert_payload}")
         send_email_alert(f"Signature Alert: {alert_payload['type']}", str(alert_payload))
