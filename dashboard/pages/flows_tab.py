@@ -5,6 +5,7 @@ import geoip2.database
 import logging
 from streamlit_autorefresh import st_autorefresh
 from hashlib import sha256
+from dashboard.utils.cleanup_db_14_days import cleanup_old_data
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -96,10 +97,14 @@ def render(flows_df, tab_container):
         filtered = filtered.merge(geo_df[["ip", "asn", "country"]], left_on="src_ip", right_on="ip", how="left")
         filtered.rename(columns={"asn": "ASN", "country": "Country"}, inplace=True)
         filtered.drop(columns=["ip"], inplace=True)
+        
+        # Manually Cleanup data ....................................................
+        #if st.button("🧹 Manually Run Cleanup (14+ Days Old)"):
+          #cleanup_old_data()
+          #st.success("Old data cleaned up from database.")
 
         with tab1:
             st.markdown("<h2 style='color:#650D61;'>📡 Network Flows Dashboard</h2>", unsafe_allow_html=True)
-
             if filtered.empty:
                 st.info("🚫 No flow data available after filtering.")
                 return

@@ -7,12 +7,14 @@ import streamlit as st
 import pandas as pd
 from utils.formatter import highlight_alerts
 from core.alerting import send_email_alert,send_slack_alert
-import uuid 
+import uuid # # Add at the top of your file
 
 RULE_PATH = "rules/rules.yaml"
 
 def render(alerts_df: pd.DataFrame, tab):
-    tab1, tab2 = st.tabs(["📊 SBA(Alerts)", "🗺️ Rule Editor"])   
+    with tab:
+         tab1, tab2 = st.tabs(["📊 SBA(Alerts)", "🗺️ Rule Editor"])   
+    
     with tab1:
         st.subheader("🚨 Signature-Based Alerts")            
         if not alerts_df.empty:
@@ -22,10 +24,10 @@ def render(alerts_df: pd.DataFrame, tab):
             st.download_button("📥 Download Alerts", filtered.to_csv(index=False), "alerts.csv")
             if st.button("🔒 Block IPs with Critical Tags", key="block_ips"):
                 critical = filtered[filtered.tags.str.contains("abuseipdb_high|otx_malicious|misp_malicious", na=False)]
-                for ip in critical["src_ip"].unique():
-                    pass
-                    #send_email_alert(ip, ["critical"])
-                    #send_slack_alert(ip, ["critical"])
+                for ip in critical["source_ip"].unique():
+                    print("Disable this line of code, when enable below code")
+                    send_email_alert(ip, ["critical"])
+                    send_slack_alert(ip, ["critical"])
                 st.success("Critical IPs blocked & alerts sent.")
         else:
                 st.info("No alerts found.")
