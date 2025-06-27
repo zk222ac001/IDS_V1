@@ -66,13 +66,13 @@ class SignatureEngine:
 
     def generate_alert(self, rule, flow):
         timestamp = time.time()
-        severity = rule.get("severity", "medium")
+        severity = rule.get("severity")
         alert_payload = format_alert_payload(rule['name'], rule['description'], flow, timestamp, severity)
 
         self.conn.execute('''INSERT INTO alerts (type, description, source_ip, destination_ip, protocol, timestamp, severity)
                              VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                          (alert_payload['type'], alert_payload['description'], alert_payload['source_ip'],
-                           alert_payload['destination_ip'], alert_payload['protocol'], alert_payload['timestamp'],
+                          (alert_payload['type'], alert_payload['description'], alert_payload['src_ip'],
+                           alert_payload['dst_ip'], alert_payload['protocol'], alert_payload['timestamp'],
                            alert_payload['severity']))
         self.conn.commit()
         # Enable ...........................

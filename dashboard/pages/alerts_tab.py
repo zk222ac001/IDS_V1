@@ -21,7 +21,9 @@ def render(alerts_df: pd.DataFrame, tab):
             query = st.text_input("Search Alerts", "", key="search_alerts")
             filtered = alerts_df[alerts_df.apply(lambda row: query.lower() in str(row).lower(), axis=1)] if query else alerts_df
             st.dataframe(highlight_alerts(filtered.head(200)), use_container_width=True)
+            # Download Alerts
             st.download_button("📥 Download Alerts", filtered.to_csv(index=False), "alerts.csv")
+            # Block Ips
             if st.button("🔒 Block IPs with Critical Tags", key="block_ips"):
                 critical = filtered[filtered.tags.str.contains("abuseipdb_high|otx_malicious|misp_malicious", na=False)]
                 for ip in critical["source_ip"].unique():
@@ -80,31 +82,33 @@ def render(alerts_df: pd.DataFrame, tab):
         rules = load_signature_rules()
         display_rules_table(rules)       
         # --- Add New Rule ---
-        st.subheader("➕ Add New Rule")
-        with st.form("new_rule_form"):
-            name = st.text_input("Rule Name")
-            description = st.text_input("Description")
-            severity = st.selectbox("Severity", ["low", "medium", "high"])
-            protocol = st.text_input("Protocol (e.g., TCP, UDP)")
-            packet_threshold = st.number_input("Packet Threshold", min_value=1, value=10)
-            time_window = st.number_input("Time Window (in seconds)", min_value=1, value=60)
-            submitted = st.form_submit_button("Add Rule")
-            if submitted:
-                new_rule = {
-                    "rule_id": str(uuid.uuid4()),  # Unique ID for the rule
-                    "name": name,
-                    "description": description,
-                    "severity": severity,
-                    "conditions": {
-                        "protocol": protocol,
-                        "packet_threshold": packet_threshold,
-                        "time_window": time_window
+        with st.expander("➕ Add New Signature Rule", expanded=False):
+            with st.form("new_rule_form"):
+                st.subheader("🧾 New Rule Details")
+                name = st.text_input("Rule Name")
+                description = st.text_input("Description")
+                severity = st.selectbox("Severity", ["low", "medium", "high"])
+                protocol = st.text_input("Protocol (e.g., TCP, UDP)")
+                packet_threshold = st.number_input("Packet Threshold", min_value=1, value=10)
+                time_window = st.number_input("Time Window (in seconds)", min_value=1, value=60)
+                submitted = st.form_submit_button("Add Rule")
+
+                if submitted:
+                    new_rule = {
+                        "rule_id": str(uuid.uuid4()),
+                        "name": name,
+                        "description": description,
+                        "severity": severity,
+                        "conditions": {
+                            "protocol": protocol,
+                            "packet_threshold": packet_threshold,
+                            "time_window": time_window
+                        }
                     }
-                }
-                rules.append(new_rule)
-                save_signature_rules(rules)
-                st.success(f"Rule '{name}' added successfully.")
-                st.experimental_rerun()
+                    rules.append(new_rule)
+                    save_signature_rules(rules)
+                    st.success(f"✅ Rule '{name}' added successfully.")
+                    st.rerun()  # or st.experimental_rerun() if using older Streamlit
 
                 # --- Display and Edit Existing Rules ---
             st.subheader("📜 Existing Rules")
@@ -112,14 +116,14 @@ def render(alerts_df: pd.DataFrame, tab):
                 st.info("No rules found.")
                 return
 
-        for i, rule in enumerate(rules):
-            with st.expander(f"Rule {i+1}: {rule.get('name', 'Unnamed')}"):
-                st.text(f"Rule ID: {rule.get('rule_id', 'N/A')}")
-                rule['name'] = st.text_input(f"Name {i}", rule['name'], key=f"name_{i}")
-                rule['description'] = st.text_input(f"Description {i}", rule['description'], key=f"desc_{i}")
-                rule['severity'] = st.selectbox(f"Severity {i}", ["low", "medium", "high"],
-                                                index=["low", "medium", "high"].index(rule.get("severity", "medium")),
-                                                key=f"sev_{i}")
+            for i, rule in enumerate(rules):
+                with st.expander(f"Rule {i+1}: {rule.get('name', 'Unnamed')}"):
+                    st.text(f"Rule ID: {rule.get('rule_id', 'N/A')}")
+                    rule['name'] = st.text_input(f"Name {i}", rule['name'], key=f"name_{i}")
+                    rule['description'] = st.text_input(f"Description {i}", rule['description'], key=f"desc_{i}")
+                    rule['severity'] = st.selectbox(f"Severity {i}", ["low", "medium", "high"],
+                                                    index=["low", "medium", "high"].index(rule.get("severity", "medium")),
+                                                    key=f"sev_{i}")
 
                 cond = rule.get("conditions", {})
                 cond['protocol'] = st.text_input(f"Protocol {i}", cond.get("protocol", ""), key=f"proto_{i}")

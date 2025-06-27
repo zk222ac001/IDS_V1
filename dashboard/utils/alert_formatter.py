@@ -1,9 +1,9 @@
-def format_alert_payload(alert_type, description, flow, timestamp, severity="medium"):
+def format_alert_payload(alert_type, description, flow, timestamp, severity):
     return {
         "type": alert_type,
         "description": description,
-        "source_ip": flow.get("source_ip"),
-        "destination_ip": flow.get("destination_ip"),
+        "src_ip": flow.get("src_ip"),
+        "dst_ip": flow.get("dst_ip"),
         "protocol": flow.get("protocol"),
         "timestamp": timestamp,
         "severity": severity
