@@ -1,6 +1,8 @@
 import sys
 import os
 import yaml
+import matplotlib.pyplot as plt
+import random
 from core_lib.threat_intel import ThreatIntel
 from dashboard.utils.repair_rules_yaml import repair_signature_rules
 import streamlit as st
@@ -14,7 +16,7 @@ RULE_PATH = "rules/rules.yaml"
 
 def render(alerts_df: pd.DataFrame, tab_container):
     with tab_container:
-         tab1, tab2 , tab3 = st.tabs(["📊 SBA(Dashboard)", "🛠 Repair Rules File", "🗺️ Rule Editor"])   
+         tab1, tab2 , tab3 , tab4 = st.tabs(["📊 SBA(Dashboard)", "🛠 Repair Rules File", "🗺️ Rule Editor", "🧪 Test Simulator"])   
     
     with tab1:
         st.subheader("🚨 Signature-Based Alerts")            
@@ -142,3 +144,36 @@ def render(alerts_df: pd.DataFrame, tab_container):
                             save_signature_rules(rules)
                             st.warning("Rule deleted.")
                             st.rerun()
+     
+    with tab4:
+        st.markdown("<h2 style='color:#650D61;'>🧪 Flow Simulation & Test Visualizer</h2>", unsafe_allow_html=True)
+        st.markdown("Use this tool to simulate fake flows and visualize alert behavior in real-time.")
+        # slider
+        num_flows = st.slider("🔢 Number of Flows to Simulate", 1, 50, 10)
+        packet_range = st.slider("📦 Packets per Flow", 1, 20, (3, 10))
+        simulate_button = st.button("🚀 Simulate Fake Flows")
+        # when button is pressed
+        if simulate_button:
+            st.info("Running simulation...")
+            sim_flows_tcp = []           
+            packet_counts = []
+            for i in range(num_flows):
+                pkt_count = random.randint(packet_range[0], packet_range[1])
+                packet_counts.append(pkt_count)
+                sim_flows_tcp.append({
+                        "src_ip": f"192.168.1.{random.randint(1, 254)}",
+                        "dst_ip": f"10.0.0.{random.randint(1, 254)}",
+                        "protocol": "TCP",
+                        "packet_count": pkt_count,
+                        "timestamp": pd.Timestamp.now()
+                    })               
+            # 📊 Plotting
+            fig, ax = plt.subplots()
+            ax.bar(range(len(packet_counts)), packet_counts, color="#650D61")
+            ax.set_xlabel("Flow #")
+            ax.set_ylabel("Packets")
+            ax.set_title("📦 Simulated Packet Distribution per Flow")
+            st.pyplot(fig)
+            st.success(f"✅ Simulated {num_flows} flows.")
+            st.dataframe(pd.DataFrame(sim_flows_tcp))
+           
