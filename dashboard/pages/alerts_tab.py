@@ -1,19 +1,20 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import yaml
 from core_lib.threat_intel import ThreatIntel
+from dashboard.utils.repair_rules_yaml import repair_signature_rules
 import streamlit as st
 import pandas as pd
 from utils.formatter import highlight_alerts
 from core.alerting import send_email_alert,send_slack_alert
 import uuid # # Add at the top of your file
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 RULE_PATH = "rules/rules.yaml"
 
-def render(alerts_df: pd.DataFrame, tab):
-    with tab:
-         tab1, tab2 = st.tabs(["📊 SBA(Alerts)", "🗺️ Rule Editor"])   
+def render(alerts_df: pd.DataFrame, tab_container):
+    with tab_container:
+         tab1, tab2 , tab3 = st.tabs(["📊 SBA(Dashboard)", "🛠 Repair Rules File", "🗺️ Rule Editor"])   
     
     with tab1:
         st.subheader("🚨 Signature-Based Alerts")            
@@ -33,18 +34,23 @@ def render(alerts_df: pd.DataFrame, tab):
                 st.success("Critical IPs blocked & alerts sent.")
         else:
                 st.info("No alerts found.")
-        
+    
     with tab2:
-        st.subheader("🚨 Rule based Editor")       
-        
+        st.subheader("🛠 Repair Rules File")
+        # Repair Button
+        if st.button("🛠 Repair Rules File (Auto-Fix Missing Fields)", key="repair_rules"):
+            repaired = repair_signature_rules()
+            st.success(f"✅ Repaired and loaded {len(repaired)} rules.")
+            st.rerun()
+            
+    with tab3:
+        st.subheader("🚨 Rule Based Editor")
+
         def load_signature_rules(path=RULE_PATH):
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(path), exist_ok=True)  
-             # If the file doesn't exist, create it with an empty list
+            os.makedirs(os.path.dirname(path), exist_ok=True)
             if not os.path.exists(path):
                 with open(path, "w") as f:
                     yaml.safe_dump([], f)
-            # Load and return rules
             with open(path, "r") as f:
                 return yaml.safe_load(f) or []
 
@@ -52,23 +58,17 @@ def render(alerts_df: pd.DataFrame, tab):
                 with open(path, "w") as f:
                     yaml.safe_dump(rules, f)
 
-        def rules_dashboard():
-            st.header("🧠 Signature Rules Editor")
-        
-        def display_rules_table(rules: list):
-            #Display existing signature rules in a table with Rule ID and key details
-            st.subheader("📋 Existing Rules (Table View)")
-    
-            if not rules:
-                st.info("No rules to display.")
-                return
+        rules = load_signature_rules()
 
+        #  Rule Table
+        st.subheader("📋 Existing Rules (Table View)")
+        if rules:
             df_rules = pd.DataFrame([
                 {
                     "Rule ID": rule.get("rule_id", f"R{i+1}"),
                     "Name": rule.get("name", ""),
                     "Description": rule.get("description", ""),
-                    "Severity": rule.get("severity", ""),
+                    "Severity": rule.get("severity", "medium"),
                     "Protocol": rule.get("conditions", {}).get("protocol", ""),
                     "Packet Threshold": rule.get("conditions", {}).get("packet_threshold", ""),
                     "Time Window (s)": rule.get("conditions", {}).get("time_window", "")
@@ -77,11 +77,10 @@ def render(alerts_df: pd.DataFrame, tab):
             ])
             st.dataframe(df_rules, use_container_width=True)
             st.download_button("📥 Download Rule Set as CSV", df_rules.to_csv(index=False), "rules.csv")
-                
-        # Load rules at the beginning so they're available throughout tab2
-        rules = load_signature_rules()
-        display_rules_table(rules)       
-        # --- Add New Rule ---
+        else:
+            st.info("No rules to display.")
+
+        # 🔹 Add New Rule
         with st.expander("➕ Add New Signature Rule", expanded=False):
             with st.form("new_rule_form"):
                 st.subheader("🧾 New Rule Details")
@@ -108,37 +107,38 @@ def render(alerts_df: pd.DataFrame, tab):
                     rules.append(new_rule)
                     save_signature_rules(rules)
                     st.success(f"✅ Rule '{name}' added successfully.")
-                    st.rerun()  # or st.experimental_rerun() if using older Streamlit
+                    st.rerun()
 
-                # --- Display and Edit Existing Rules ---
-            st.subheader("📜 Existing Rules")
-            if not rules:
-                st.info("No rules found.")
-                return
-
+        # 🔹 Existing Rules Editor (OUTSIDE expander/form)
+        st.subheader("📜 Edit/Delete Rules")
+        if not rules:
+            st.info("No rules found.")
+        else:
             for i, rule in enumerate(rules):
                 with st.expander(f"Rule {i+1}: {rule.get('name', 'Unnamed')}"):
                     st.text(f"Rule ID: {rule.get('rule_id', 'N/A')}")
                     rule['name'] = st.text_input(f"Name {i}", rule['name'], key=f"name_{i}")
                     rule['description'] = st.text_input(f"Description {i}", rule['description'], key=f"desc_{i}")
-                    rule['severity'] = st.selectbox(f"Severity {i}", ["low", "medium", "high"],
-                                                    index=["low", "medium", "high"].index(rule.get("severity", "medium")),
-                                                    key=f"sev_{i}")
+                    rule['severity'] = st.selectbox(
+                        f"Severity {i}", ["low", "medium", "high"],
+                        index=["low", "medium", "high"].index(rule.get("severity", "medium")),
+                        key=f"sev_{i}"
+                    )
 
-                cond = rule.get("conditions", {})
-                cond['protocol'] = st.text_input(f"Protocol {i}", cond.get("protocol", ""), key=f"proto_{i}")
-                cond['packet_threshold'] = st.number_input(f"Packet Threshold {i}", value=int(cond.get("packet_threshold", 1)), min_value=1, key=f"pkt_{i}")
-                cond['time_window'] = st.number_input(f"Time Window {i} (sec)", value=int(cond.get("time_window", 60)), min_value=1, key=f"time_{i}")
-                rule["conditions"] = cond
+                    cond = rule.get("conditions", {})
+                    cond['protocol'] = st.text_input(f"Protocol {i}", cond.get("protocol", ""), key=f"proto_{i}")
+                    cond['packet_threshold'] = st.number_input(f"Packet Threshold {i}", value=int(cond.get("packet_threshold", 1)), min_value=1, key=f"pkt_{i}")
+                    cond['time_window'] = st.number_input(f"Time Window {i} (sec)", value=int(cond.get("time_window", 60)), min_value=1, key=f"time_{i}")
+                    rule["conditions"] = cond
 
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    if st.button("💾 Save Changes", key=f"save_{i}"):
-                        save_signature_rules(rules)
-                        st.success("Rule updated.")
-                with col2:
-                    if st.button("🗑️ Delete Rule", key=f"delete_{i}"):
-                        rules.pop(i)
-                        save_signature_rules(rules)
-                        st.warning("Rule deleted.")
-                        st.experimental_rerun()
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("💾 Save Changes", key=f"save_{i}"):
+                            save_signature_rules(rules)
+                            st.success("Rule updated.")
+                    with col2:
+                        if st.button("🗑️ Delete Rule", key=f"delete_{i}"):
+                            rules.pop(i)
+                            save_signature_rules(rules)
+                            st.warning("Rule deleted.")
+                            st.rerun()

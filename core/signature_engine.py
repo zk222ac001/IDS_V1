@@ -65,9 +65,9 @@ class SignatureEngine:
                 self.generate_alert(rule, flow)
 
     def generate_alert(self, rule, flow):
-        timestamp = time.time()
-        severity = rule.get("severity")
-        alert_payload = format_alert_payload(rule['name'], rule['description'], flow, timestamp, severity)
+        timestamp = time.time() 
+        severity = rule.get("severity", "Unknown")     
+        alert_payload = format_alert_payload(rule['name'], rule['description'], flow, timestamp ,severity)
 
         self.conn.execute('''INSERT INTO alerts (type, description, source_ip, destination_ip, protocol, timestamp, severity)
                              VALUES (?, ?, ?, ?, ?, ?, ?)''',

@@ -1,14 +1,16 @@
 - conditions:
-    packet_threshold: 11
+    packet_threshold: 10
     protocol: TCP
-    time_window: 60
+    time_window: 61
   description: Detects SYN floods (many SYNs, no ACKs)
   name: ' TCP SYN Flood'
-  severity: low
+  rule_id: e8b8dca0-5af4-4b08-98ec-5b2607bdef7c
+  severity: high
 - conditions:
-    packet_threshold: 16
+    packet_threshold: 10
     protocol: UDP
-    time_window: 60
-  description: ' Detects multiple port hits from same IP'
+    time_window: 5
+  description: Detects multiple port hits from same IP
   name: Port Scan
-  severity: low
+  rule_id: 11310f80-fe02-4136-8238-35f95496bf3d
+  severity: medium

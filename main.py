@@ -28,4 +28,4 @@ def main():
         logging.exception(f"❌ An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
-    main()
+    main()  
