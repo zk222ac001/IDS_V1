@@ -1,6 +1,6 @@
 - conditions:
     packet_threshold: 10
-    protocol: TCP
+    protocol: UDP
     time_window: 61
   description: Detects SYN floods (many SYNs, no ACKs)
   name: ' TCP SYN Flood'

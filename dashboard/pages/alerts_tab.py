@@ -12,7 +12,7 @@ from core.alerting import send_email_alert,send_slack_alert
 import uuid # # Add at the top of your file
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-RULE_PATH = "rules/rules.yaml"
+RULE_PATH = "../rules/rules.yaml"
 
 def render(alerts_df: pd.DataFrame, tab_container):
     with tab_container:
@@ -88,8 +88,8 @@ def render(alerts_df: pd.DataFrame, tab_container):
                 st.subheader("🧾 New Rule Details")
                 name = st.text_input("Rule Name")
                 description = st.text_input("Description")
-                severity = st.selectbox("Severity", ["low", "medium", "high"])
-                protocol = st.text_input("Protocol (e.g., TCP, UDP)")
+                severity = st.selectbox("Severity", ["low", "medium", "high", "critical"])
+                protocol = st.text_input("Protocol (e.g., TCP, UDP or OTHERS)")
                 packet_threshold = st.number_input("Packet Threshold", min_value=1, value=10)
                 time_window = st.number_input("Time Window (in seconds)", min_value=1, value=60)
                 submitted = st.form_submit_button("Add Rule")
@@ -122,8 +122,8 @@ def render(alerts_df: pd.DataFrame, tab_container):
                     rule['name'] = st.text_input(f"Name {i}", rule['name'], key=f"name_{i}")
                     rule['description'] = st.text_input(f"Description {i}", rule['description'], key=f"desc_{i}")
                     rule['severity'] = st.selectbox(
-                        f"Severity {i}", ["low", "medium", "high"],
-                        index=["low", "medium", "high"].index(rule.get("severity", "medium")),
+                        f"Severity {i}", ["low", "medium", "high","critical"],
+                        index=["low", "medium", "high", "critical"].index(rule.get("severity", "medium")),
                         key=f"sev_{i}"
                     )
 
@@ -138,6 +138,7 @@ def render(alerts_df: pd.DataFrame, tab_container):
                         if st.button("💾 Save Changes", key=f"save_{i}"):
                             save_signature_rules(rules)
                             st.success("Rule updated.")
+                            st.rerun()
                     with col2:
                         if st.button("🗑️ Delete Rule", key=f"delete_{i}"):
                             rules.pop(i)

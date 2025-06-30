@@ -5,7 +5,7 @@ from collections import defaultdict
 rules = []
 rule_cache = defaultdict(list)
 
-def load_rules(filepath="rules/rules.yaml"):
+def load_rules(filepath="../rules/rules.yaml"):
     global rules
     with open(filepath, 'r') as f:
         loaded = yaml.safe_load(f)
