@@ -13,16 +13,17 @@ def format_timestamp(ts):
 
 def highlight_alerts(df: pd.DataFrame) -> Styler:
     def style_row(row):
-        if row['severity'] == 'high':
-            return ['background-color: #ff4d4d; color: white'] * len(row)
+        if row['severity'] == 'critical':
+            return ['background-color: #8B0000; color: white'] * len(row  )  # Dark Red
+        elif row['severity'] == 'high':
+            return ['background-color: #ff4d4d; color: white'] * len(row)     # Bright Red
         elif row['severity'] == 'medium':
-            return ['background-color: #ffa500; color: black'] * len(row)
+            return ['background-color: #ffa500; color: black'] * len(row)     # Orange
         elif row['severity'] == 'low':
-            return ['background-color: #ffff99; color: black'] * len(row)
+            return ['background-color: #ffff99; color: black'] * len(row)     # Yellow
         else:
-            return [''] * len(row)
+            return [''] * len(row)  # Default styling
     return df.style.apply(style_row, axis=1)
-
 
 def Change_time_stamp_tab(flows_df , alerts_df , ml_alerts_df):       
     dataframes = {

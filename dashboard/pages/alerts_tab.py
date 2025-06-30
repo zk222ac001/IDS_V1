@@ -1,23 +1,59 @@
+import sqlite3
 import sys
 import os
 import yaml
 import matplotlib.pyplot as plt
 import random
-from core_lib.threat_intel import ThreatIntel
-from dashboard.utils.repair_rules_yaml import repair_signature_rules
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+from core_lib.threat_intel import ThreatIntel
+from dashboard.utils.repair_rules_yaml import repair_signature_rules
 from utils.formatter import highlight_alerts
 from core.alerting import send_email_alert,send_slack_alert
 import uuid # # Add at the top of your file
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 RULE_PATH = "../rules/rules.yaml"
+DB_PATH = "../ids_data.db"
+
+# Alert functions........................................
+@st.cache_data(ttl=10)
+def load_alerts():
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT * FROM alerts", conn)
+    conn.close()
+    return df
+
+def main():   
+    df = load_alerts()
+
+    if df.empty:
+        st.warning("No alerts found.")
+        return
+    
+    st.subheader("📋 Raw Alert Table")
+    st.dataframe(df.sort_values("timestamp", ascending=False), use_container_width=True)
+
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fig1 = px.histogram(df, x='timestamp', color='severity', nbins=20,
+                            title="Alert Frequency Over Time")
+        st.plotly_chart(fig1, use_container_width=True)
+
+    with col2:
+        fig2 = px.pie(df, names='type', title="Alert Types Distribution")
+        st.plotly_chart(fig2, use_container_width=True)
+
+    #st.subheader("📋 Raw Alert Table")
+    #st.dataframe(df.sort_values("timestamp", ascending=False), use_container_width=True)
 
 def render(alerts_df: pd.DataFrame, tab_container):
     with tab_container:
-         tab1, tab2 , tab3 , tab4 = st.tabs(["📊 SBA(Dashboard)", "🛠 Repair Rules File", "🗺️ Rule Editor", "🧪 Test Simulator"])   
-    
+         tab1, tab2 , tab3 , tab4, tab5 = st.tabs(["📊 SBA(Dashboard-1)","📊 SBA(Dashboard-2)" ,"🛠 Repair Rules File", "🗺️ Rule Editor", "🧪 Test Simulator"])
     with tab1:
         st.subheader("🚨 Signature-Based Alerts")            
         if not alerts_df.empty:
@@ -38,6 +74,9 @@ def render(alerts_df: pd.DataFrame, tab_container):
                 st.info("No alerts found.")
     
     with tab2:
+        main()
+        
+    with tab3:
         st.subheader("🛠 Repair Rules File")
         # Repair Button
         if st.button("🛠 Repair Rules File (Auto-Fix Missing Fields)", key="repair_rules"):
@@ -45,7 +84,7 @@ def render(alerts_df: pd.DataFrame, tab_container):
             st.success(f"✅ Repaired and loaded {len(repaired)} rules.")
             st.rerun()
             
-    with tab3:
+    with tab4:
         st.subheader("🚨 Rule Based Editor")
 
         def load_signature_rules(path=RULE_PATH):
@@ -146,7 +185,7 @@ def render(alerts_df: pd.DataFrame, tab_container):
                             st.warning("Rule deleted.")
                             st.rerun()
      
-    with tab4:
+    with tab5:
         st.markdown("<h2 style='color:#650D61;'>🧪 Flow Simulation & Test Visualizer</h2>", unsafe_allow_html=True)
         st.markdown("Use this tool to simulate fake flows and visualize alert behavior in real-time.")
         # slider

@@ -8,3 +8,4 @@ def format_alert_payload(alert_type, description, flow, timestamp, severity):
         "timestamp": timestamp,
         "severity": severity
     }
+    
