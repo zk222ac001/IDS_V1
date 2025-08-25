@@ -1,80 +1,39 @@
 - conditions:
-    packet_threshold: 100
-    protocol: TCP
-    time_window: 30
-  description: More than 100 TCP packets in 30 seconds from same source IP
-  name: TCP Port Scan
-  rule_id: e00370e6-463c-4be6-9173-8f2a10c9e9e2
-  severity: high
-- conditions:
     packet_threshold: 5
     protocol: TCP
     time_window: 10
   description: More than 5 TCP packets in 10 seconds
   name: Test TCP Flood
-  rule_id: 38ff784d-7dd1-4c22-85fd-38b2b68cfc8c
   severity: high
 - conditions:
-    packet_threshold: 20
-    protocol: TCP
-    time_window: 15
-  description: Multiple FTP connection attempts in short time
-  name: FTP Brute Force
-  rule_id: 2c21089d-2a02-4e2f-8586-9b18783ee770
-  severity: critical
-- conditions:
-    packet_threshold: 30
-    protocol: UDP
-    time_window: 10
-  description: High volume of UDP traffic to port 53
-  name: DNS Tunneling Suspected
-  rule_id: 2db8bd64-db83-4c60-8e5d-8b8c6dee59f2
-  severity: high
-- conditions:
-    packet_threshold: 200
+    packet_threshold: 10
     protocol: TCP
     time_window: 60
-  description: Numerous small TCP packets within short time
-  name: Slowloris Attack
-  rule_id: ae92e505-7d63-4882-81c4-895f5f8fba6a
-  severity: critical
-- conditions:
-    packet_threshold: 30
-    protocol: ICMP
-    time_window: 10
-  description: Abnormal ICMP packet rate
-  name: ICMP Flood Detected
-  rule_id: 278f8800-7251-49cc-bf0c-b78c0e24bf4c
-  severity: high
-- conditions:
-    packet_threshold: 20
-    protocol: ICMP
-    time_window: 30
-  description: '"ICMP Echo Requests from same source to many destinations'
-  name: Ping Sweep
-  rule_id: 00966c57-9854-4719-8322-9cf3a00f8d0d
-  severity: medium
-- conditions:
-    packet_threshold: 25
-    protocol: TCP
-    time_window: 15
-  description: TCP traffic to port 445 exceeding threshold
-  name: SMB Scan
-  rule_id: abec2f0b-1680-4987-adbd-f1c2797d74fe
-  severity: high
-- conditions:
-    packet_threshold: 100
-    protocol: TCP
-    time_window: 30
-  description: High number of packets to port 80/443
-  name: High HTTP Volume
-  rule_id: 82b0e309-a7f9-42f1-9b4c-8b4836f8df65
+  description: Detects SSH connections to a specific server
+  name: SSH Connection Attempt
+  rule_id: c3780cf5-d5b4-46b8-856c-5d9f6ec8dbb0
   severity: medium
 - conditions:
     packet_threshold: 10
     protocol: TCP
     time_window: 60
-  description: Repeating TCP connections to same IP every X seconds
-  name: Malware Beaconing Pattern
-  rule_id: 1bcfe7f3-4cd5-4b48-9a47-a10679cad7af
-  severity: critical
+  description: Detects SQL injection attempts over HTTP
+  name: SQL Injection Attempt
+  rule_id: 94a8f497-0eff-4735-8dc5-310a5b60206f
+  severity: high
+- conditions:
+    packet_threshold: 5
+    protocol: TCP
+    time_window: 60
+  description: Detects more than 5 failed FTP logins in 60 seconds
+  name: FTP Brute Force
+  rule_id: 7b8b8d30-e641-4185-85dc-06346d8c8c7f
+  severity: high
+- conditions:
+    packet_threshold: 5
+    protocol: UDP
+    time_window: 60
+  description: Detects oversized DNS packets that may indicate tunneling
+  name: DNS Tunneling Detection
+  rule_id: af11a3f0-fcbe-4b33-b625-dcda150fa163
+  severity: high

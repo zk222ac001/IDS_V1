@@ -21,8 +21,8 @@ try:
     if result is not None:
         flows_df, alerts_df, ml_alerts_df = result
     else:
-        st.error("❌ Data loading failed completely.")
-
+        st.error("❌ Data loading failed completely.") 
+       
     # Check if any DataFrame failed to load (i.e., is None)
     if flows_df is None or alerts_df is None or ml_alerts_df is None:
         st.error("❌ One or more datasets failed to load. Please check your database or file sources.")
@@ -54,10 +54,10 @@ try:
         except Exception as e:
             st.error(f"❌ Failed to render Signature-Based Alerts tab: {e}")
 
-        #try:
-        #   ml_alerts_tab.render(ml_alerts_df, tabs[2])
-        #except Exception as e:
-         #   st.error(f"❌ Failed to render ML-Based Alerts tab: {e}")
+        try:
+            ml_alerts_tab.render(ml_alerts_df, tabs[2])
+        except Exception as e:
+           st.error(f"❌ Failed to render ML-Based Alerts tab: {e}")
 
         # Optional: uncomment and wrap these when implementing
         # try:

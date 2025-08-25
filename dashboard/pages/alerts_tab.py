@@ -36,7 +36,7 @@ def main():
     st.dataframe(df.sort_values("timestamp", ascending=False), use_container_width=True)
 
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
-
+    
     col1, col2 = st.columns(2)
 
     with col1:
@@ -46,10 +46,7 @@ def main():
 
     with col2:
         fig2 = px.pie(df, names='type', title="Alert Types Distribution")
-        st.plotly_chart(fig2, use_container_width=True)
-
-    #st.subheader("📋 Raw Alert Table")
-    #st.dataframe(df.sort_values("timestamp", ascending=False), use_container_width=True)
+        st.plotly_chart(fig2, use_container_width=True)   
 
 def render(alerts_df: pd.DataFrame, tab_container):
     with tab_container:

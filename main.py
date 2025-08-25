@@ -9,7 +9,6 @@ from core.alert_engine import AlertEngine
 def main():
     try:
         logging.info("🔧 Initializing modules...")
-
         flow_builder = FlowBuilder()
         signature_engine = SignatureEngine()
         alert_engine = AlertEngine(
@@ -18,7 +17,6 @@ def main():
             misp_url="https://your-misp-instance.com",
             misp_key="YOUR_MISP_API_KEY"
         )
-
         logging.info("🚀 Starting packet sniffing...")
         start_sniffing(flow_builder, signature_engine, alert_engine)
 
