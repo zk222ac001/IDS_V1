@@ -57,13 +57,12 @@ try:
         try:
             ml_alerts_tab.render(ml_alerts_df, tabs[2])
         except Exception as e:
-           st.error(f"❌ Failed to render ML-Based Alerts tab: {e}")
-
-        # Optional: uncomment and wrap these when implementing
-        # try:
-        #     enrichment_tab.render(intel, tabs[3])
-        # except Exception as e:
-        #     st.error(f"❌ Failed to render Threat Intelligence tab: {e}")
+            st.error(f"❌ Failed to render ML-Based Alerts tab: {e}")
+       
+        try:
+            enrichment_tab.render(intel, tabs[3])
+        except Exception as e:
+            st.error(f"❌ Failed to render Threat Intelligence tab: {e}")
 
         # try:
         #     graph_tab.render(alerts_df, ml_alerts_df, intel, tabs[4])
