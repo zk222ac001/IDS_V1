@@ -3,11 +3,14 @@ import sqlite3
 
 DB_PATH = "../ids_data.db"
 
-def cleanup_old_data(days=14):
-    conn = sqlite3.connect(DB_PATH)
+def cleanup_old_data(days=7):
+    # Autocommit mode ensures VACUUM works
+    conn = sqlite3.connect(DB_PATH, isolation_level=None)
     cursor = conn.cursor()
-    
+
     print(f"🧹 Deleting data older than {days} days...")
+
+    cursor.execute("BEGIN")   # Start manual transaction
 
     # Delete old flows
     cursor.execute(f"""
@@ -21,9 +24,10 @@ def cleanup_old_data(days=14):
         WHERE timestamp < datetime('now', '-{days} days')
     """)
 
-    # Optional: reclaim file space
+    cursor.execute("COMMIT")  # End transaction cleanly
+
+    # Now run VACUUM OUTSIDE a transaction
     cursor.execute("VACUUM")
 
-    conn.commit()
     conn.close()
     print("✅ Cleanup complete.")
