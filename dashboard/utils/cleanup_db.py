@@ -3,7 +3,7 @@ import sqlite3
 
 DB_PATH = "../ids_data.db"
 
-def cleanup_old_data(days=7):
+def cleanup_old_data(days=2):
     # Autocommit mode ensures VACUUM works
     conn = sqlite3.connect(DB_PATH, isolation_level=None)
     cursor = conn.cursor()
@@ -19,13 +19,20 @@ def cleanup_old_data(days=7):
     """)
 
     # Delete old alerts
+    '''
     cursor.execute(f"""
         DELETE FROM alerts
         WHERE timestamp < datetime('now', '-{days} days')
     """)
-
+    '''
+    # Delete old ml_alerts
+    
+    cursor.execute(f"""
+        DELETE FROM ml_alerts
+        WHERE timestamp < datetime('now', '-{days} days')
+    """)
+    
     cursor.execute("COMMIT")  # End transaction cleanly
-
     # Now run VACUUM OUTSIDE a transaction
     cursor.execute("VACUUM")
 

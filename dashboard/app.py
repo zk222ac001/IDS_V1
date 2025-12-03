@@ -6,7 +6,7 @@ import streamlit as st
 import pages.flows_tab as flows_tab
 import pages.alerts_tab as alerts_tab
 import pages.ml_alerts_tab as ml_alerts_tab
-import pages.enrichment_tab as enrichment_tab
+import pages.threat_intelligence_tab as threat_intelligence_tab
 import pages.graph_tab as graph_tab
 import pages.geo_map_tab as geo_map_tab
 from utils.loading_data import loading_data_tabs
@@ -60,7 +60,7 @@ try:
             st.error(f"❌ Failed to render ML-Based Alerts tab: {e}")
        
         try:
-            enrichment_tab.render(intel, tabs[3])
+            threat_intelligence_tab.render(intel, tabs[3])
         except Exception as e:
             st.error(f"❌ Failed to render Threat Intelligence tab: {e}")
 

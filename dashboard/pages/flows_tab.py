@@ -88,21 +88,15 @@ def render(flows_df, tab_container):
             st.markdown("### 🔒 Auto-Block Countries")
             blocked_countries = st.multiselect("Select Countries to Block", options=sorted(geo_df["country"].unique()), key="blocked_countries")
 
-        blocked_ips = geo_df[geo_df["country"].isin(blocked_countries)]["ip"].tolist()
-        filtered = filtered[~filtered["src_ip"].isin(blocked_ips)]
+            blocked_ips = geo_df[geo_df["country"].isin(blocked_countries)]["ip"].tolist()
+            filtered = filtered[~filtered["src_ip"].isin(blocked_ips)]
 
-        if blocked_ips:
-            st.warning(f"🚫 {len(blocked_ips)} IPs blocked from: {', '.join(blocked_countries)}")
+            if blocked_ips:
+                st.warning(f"🚫 {len(blocked_ips)} IPs blocked from: {', '.join(blocked_countries)}")
 
-        filtered = filtered.merge(geo_df[["ip", "asn", "country"]], left_on="src_ip", right_on="ip", how="left")
-        filtered.rename(columns={"asn": "ASN", "country": "Country"}, inplace=True)
-        filtered.drop(columns=["ip"], inplace=True)
-        
-        # Manually Cleanup data ....................................................
-        if st.button("🧹 Manually Run Cleanup (7+ Days Old)"):
-          cleanup_old_data(7)
-          st.cache_data.clear()   # clear cached query results
-          st.success("Old data cleaned successfully!")
+            filtered = filtered.merge(geo_df[["ip", "asn", "country"]], left_on="src_ip", right_on="ip", how="left")
+            filtered.rename(columns={"asn": "ASN", "country": "Country"}, inplace=True)
+            filtered.drop(columns=["ip"], inplace=True)        
           
         with tab1:
             st.markdown("<h2 style='color:#650D61;'>📡 Network Flows Dashboard</h2>", unsafe_allow_html=True)
@@ -127,7 +121,7 @@ def render(flows_df, tab_container):
                 display_df.sort_values("timestamp", ascending=False).head(200).style.bar(
                     subset=["packet_count", "Bytes (MB)"], color="#650D61"
                 ),
-                use_container_width=True
+                width="stretch"
             )
 
             @st.cache_data
@@ -137,6 +131,12 @@ def render(flows_df, tab_container):
                 return csv_df.to_csv(index=False)
 
             st.download_button("📥 Download Filtered Flows", get_csv_string(display_df), "flows.csv")
+
+            # Manually Cleanup data ....................................................
+            if st.button("🧹 Manually Run Cleanup (2+ Days Old)"):
+             cleanup_old_data(2)
+             st.cache_data.clear()   # clear cached query results
+             st.success("Old data cleaned successfully!")        
 
         with tab2:
             st.markdown("<h2 style='color:#650D61;'>🗺️ Flow Source GeoIP Map</h2>", unsafe_allow_html=True)
