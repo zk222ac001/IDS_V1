@@ -64,15 +64,15 @@ try:
         except Exception as e:
             st.error(f"❌ Failed to render Threat Intelligence tab: {e}")
 
-        # try:
-        #     graph_tab.render(alerts_df, ml_alerts_df, intel, tabs[4])
-        # except Exception as e:
-        #     st.error(f"❌ Failed to render Graph View tab: {e}")
+        try:
+            graph_tab.render(flows_df,alerts_df,ml_alerts_df,tabs[4])
+        except Exception as e:
+            st.error(f"❌ Failed to render Graph View tab: {e}")
         
-        #try:
-              #geo_map_tab.render(flows_df, tabs[5])
-        #except Exception as e:
-              #st.error(f"❌ Failed to render Graph Mab tab: {e}")
+        try:
+            geo_map_tab.render(flows_df, tabs[5])
+        except Exception as e:
+            st.error(f"❌ Failed to render Graph Mab tab: {e}")
 
 except Exception as e:
     st.exception(f"💥 Critical error during initialization: {e}")
