@@ -11,18 +11,14 @@ def optimize_dtypes(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return df
     df = df.copy()
-    if "src_ip" in df.columns:
-        try:
-            df["src_ip"] = df["src_ip"].astype("category")
-        except Exception:
-            pass
-    if "anomaly" in df.columns:
-        try:
-            df["anomaly"] = df["anomaly"].astype("category")
-        except Exception:
-            pass
+    for col in ["src_ip", "dst_ip", "protocol", "anomaly"]:
+        if col in df.columns:
+            try:
+                df[col] = df[col].astype("category")
+            except Exception:
+                pass
     if "timestamp" in df.columns:
-        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=False)
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     if "score" in df.columns:
         df["score"] = pd.to_numeric(df["score"], errors="coerce")
     return df
@@ -30,15 +26,13 @@ def optimize_dtypes(df: pd.DataFrame) -> pd.DataFrame:
 
 # ---------- Lazy Data Loader ----------
 @st.cache_data(show_spinner=True)
-def load_data_lazy(file_path, chunksize=100000):
+def load_data_lazy(file_path, chunksize=100000) -> pd.DataFrame:
     chunks = []
     for chunk in pd.read_csv(file_path, chunksize=chunksize):
         chunk = prepare_ml_alerts(chunk)
         chunk = optimize_dtypes(chunk)
         chunks.append(chunk)
-    if not chunks:
-        return pd.DataFrame()
-    return pd.concat(chunks, ignore_index=True)
+    return pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
 
 
 # ---------- Data Preparation ----------
@@ -66,13 +60,10 @@ def render(ml_alerts_df: pd.DataFrame, tab_container):
         return
 
     ml_alerts_df = optimize_dtypes(ml_alerts_df)
+    ml_alerts_df["score"] = pd.to_numeric(ml_alerts_df.get("score", pd.NA), errors="coerce")
+    ml_alerts_df["anomaly"] = ml_alerts_df.get("anomaly", "No")
 
-    if "score" not in ml_alerts_df.columns:
-        ml_alerts_df["score"] = pd.NA
-    if "anomaly" not in ml_alerts_df.columns:
-        ml_alerts_df["anomaly"] = "No"
-
-    # TAB 1
+    # ---------- TAB 1: Alerts Table ----------
     with tab1:
         st.title("🔍 Machine Learning Anomaly Alerts")
 
@@ -101,37 +92,27 @@ def render(ml_alerts_df: pd.DataFrame, tab_container):
             )
         except Exception as e:
             st.error(f"Failed to render AgGrid: {e}")
-            st.dataframe(ml_alerts_df, width="stretch")
+            st.dataframe(ml_alerts_df, use_container_width=True)
 
-        # Score distribution
         st.subheader("📈 Anomaly Score Distribution")
-
-        rows_per_page = st.number_input(
-            "Rows per chart page (scores)",
-            min_value=50, max_value=1000, value=200, step=50, key="score_rows"
-        )
-
         numeric_scores = ml_alerts_df["score"].dropna().reset_index(drop=True)
         if numeric_scores.empty:
             st.info("No numeric score values to plot.")
         else:
+            rows_per_page = st.number_input(
+                "Rows per chart page (scores)",
+                min_value=50, max_value=1000, value=200, step=50, key="score_rows"
+            )
             total_pages = max(1, (len(numeric_scores) - 1) // rows_per_page + 1)
-
-            if "score_page" not in st.session_state:
-                st.session_state["score_page"] = 1
-
             page = st.number_input(
                 "Score Page",
                 min_value=1, max_value=total_pages,
-                value=st.session_state["score_page"],
+                value=st.session_state.get("score_page", 1),
                 step=1,
                 key="score_page_input"
             )
             st.session_state["score_page"] = page
-
-            start = (page - 1) * rows_per_page
-            end = start + rows_per_page
-
+            start, end = (page - 1) * rows_per_page, page * rows_per_page
             score_df = pd.DataFrame({"score": numeric_scores.iloc[start:end]})
 
             score_chart = (
@@ -144,14 +125,13 @@ def render(ml_alerts_df: pd.DataFrame, tab_container):
                 )
                 .properties(height=300)
             )
+            st.altair_chart(score_chart, use_container_width=True)
 
-            st.altair_chart(score_chart, width="stretch")
-
-    # TAB 2
+    # ---------- TAB 2: Analytics ----------
     with tab2:
         st.title("📈 ML Alerts Analytics")
-
         st.subheader("⚖️ Anomaly vs Normal Distribution")
+
         anomaly_counts = ml_alerts_df["anomaly"].value_counts().reset_index(name="Count")
         anomaly_counts.columns = ["Anomaly", "Count"]
 
@@ -165,51 +145,32 @@ def render(ml_alerts_df: pd.DataFrame, tab_container):
                     tooltip=["Anomaly", "Count"],
                 )
             )
-            st.altair_chart(pie_chart, width="stretch")
+            st.altair_chart(pie_chart, use_container_width=True)
         else:
             st.info("No anomaly/normal data to display.")
 
-        # Timeline
         if "timestamp" in ml_alerts_df.columns:
             st.subheader("⏳ Alerts Over Time")
-
-            time_df = ml_alerts_df.copy()
-            time_df["timestamp"] = pd.to_datetime(time_df["timestamp"], errors="coerce")
-            time_df = time_df.dropna(subset=["timestamp"])
-
-            if time_df.empty:
-                st.info("No valid timestamps available.")
-            else:
-                time_df["date"] = time_df["timestamp"].dt.date
-
+            time_df = ml_alerts_df.dropna(subset=["timestamp"]).copy()
+            if not time_df.empty:
+                time_df["date"] = pd.to_datetime(time_df["timestamp"]).dt.date
                 rows_per_page_tl = st.number_input(
                     "Rows per timeline page", min_value=30, max_value=365, value=90, step=30, key="timeline_rows"
                 )
-
                 total_pages_tl = max(1, (len(time_df) - 1) // rows_per_page_tl + 1)
-
-                if "timeline_page" not in st.session_state:
-                    st.session_state["timeline_page"] = 1
-
                 page_tl = st.number_input(
                     "Timeline Page",
-                    min_value=1,
-                    max_value=total_pages_tl,
-                    value=st.session_state["timeline_page"],
+                    min_value=1, max_value=total_pages_tl,
+                    value=st.session_state.get("timeline_page", 1),
                     step=1,
                     key="timeline_page_input"
                 )
                 st.session_state["timeline_page"] = page_tl
-
-                start_tl = (page_tl - 1) * rows_per_page_tl
-                end_tl = start_tl + rows_per_page_tl
-
+                start_tl, end_tl = (page_tl - 1) * rows_per_page_tl, page_tl * rows_per_page_tl
                 slice_df = time_df.iloc[start_tl:end_tl]
                 agg = slice_df.groupby("date").size().reset_index(name="count")
 
-                if agg.empty:
-                    st.info("No timeline data.")
-                else:
+                if not agg.empty:
                     timeline_chart = (
                         alt.Chart(agg)
                         .mark_line(point=True)
@@ -220,44 +181,34 @@ def render(ml_alerts_df: pd.DataFrame, tab_container):
                         )
                         .properties(height=300)
                     )
-                    st.altair_chart(timeline_chart, width="stretch")
+                    st.altair_chart(timeline_chart, use_container_width=True)
+                else:
+                    st.info("No timeline data available.")
 
         # Top IPs
         if "src_ip" in ml_alerts_df.columns:
             st.subheader("🌐 Top Source IPs (Anomalies Only)")
-
             anomalous_ips = ml_alerts_df[ml_alerts_df["anomaly"] == "Yes"]
-
-            if anomalous_ips.empty:
-                st.info("No anomalous IPs found.")
-            else:
+            if not anomalous_ips.empty:
                 top_sources = (
-                    anomalous_ips.groupby("src_ip").size().reset_index(name="Count").sort_values(by="Count", ascending=False)
+                    anomalous_ips.groupby("src_ip").size().reset_index(name="Count")
+                    .sort_values(by="Count", ascending=False)
                 )
-
                 rows_per_page_ips = st.number_input(
                     "Rows per top IPs chart",
                     min_value=5, max_value=50, value=10, step=5,
                     key="top_ips_rows"
                 )
-
                 total_pages_ips = max(1, (len(top_sources) - 1) // rows_per_page_ips + 1)
-
-                if "top_ip_page" not in st.session_state:
-                    st.session_state["top_ip_page"] = 1
-
                 page_ips = st.number_input(
                     "Top IPs Page",
-                    min_value=1,
-                    max_value=total_pages_ips,
-                    value=st.session_state["top_ip_page"],
+                    min_value=1, max_value=total_pages_ips,
+                    value=st.session_state.get("top_ip_page", 1),
                     step=1,
                     key="top_ip_page_input"
                 )
                 st.session_state["top_ip_page"] = page_ips
-
-                start_ips = (page_ips - 1) * rows_per_page_ips
-                end_ips = start_ips + rows_per_page_ips
+                start_ips, end_ips = (page_ips - 1) * rows_per_page_ips, page_ips * rows_per_page_ips
 
                 bar_chart = (
                     alt.Chart(top_sources.iloc[start_ips:end_ips])
@@ -269,8 +220,9 @@ def render(ml_alerts_df: pd.DataFrame, tab_container):
                     )
                     .properties(height=300)
                 )
-
-                st.altair_chart(bar_chart, width="stretch")
+                st.altair_chart(bar_chart, use_container_width=True)
+            else:
+                st.info("No anomalous IPs found.")
         else:
             st.info("No src_ip column found.")
 
