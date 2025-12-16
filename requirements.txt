@@ -1,5 +1,10 @@
-scapy
 rich
 pyyaml
+networkx
 streamlit
+geoip2
+maxminddb
 pandas
+numpy
+scikit-learn
+scapy
