@@ -12,3 +12,4 @@ streamlit-autorefresh
 plotly
 streamlit-aggrid
 matplotlib
+folium
