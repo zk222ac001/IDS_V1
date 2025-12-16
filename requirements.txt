@@ -11,3 +11,4 @@ scapy
 streamlit-autorefresh
 plotly
 streamlit-aggrid
+matplotlib
