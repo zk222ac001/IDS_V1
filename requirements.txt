@@ -14,3 +14,4 @@ streamlit-aggrid
 matplotlib
 folium
 streamlit-folium
+nest_asyncio>=1.5.6
