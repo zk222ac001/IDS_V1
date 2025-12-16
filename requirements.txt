@@ -10,3 +10,4 @@ scikit-learn
 scapy
 streamlit-autorefresh
 plotly
+streamlit-aggrid
