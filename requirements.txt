@@ -13,3 +13,4 @@ plotly
 streamlit-aggrid
 matplotlib
 folium
+streamlit-folium
