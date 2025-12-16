@@ -9,3 +9,4 @@ numpy
 scikit-learn
 scapy
 streamlit-autorefresh
+plotly
