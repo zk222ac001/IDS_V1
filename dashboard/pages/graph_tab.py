@@ -9,22 +9,28 @@ from pyvis.network import Network
 import asyncio                                        
 import streamlit.components.v1 as components          
 from config.setting import intel
-
+import os
 # Load only once at the top level
-GEOIP_DB_PATH = "../database/GeoLite2-City.mmdb"
-geoip_reader = geoip2.database.Reader(GEOIP_DB_PATH)
+# GEOIP_DB_PATH = "../database/GeoLite2-City.mmdb"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
+GEOIP_CITY_PATH = os.path.join(PROJECT_ROOT, "database", "GeoLite2-City.mmdb")
+
+if os.path.exists(GEOIP_CITY_PATH):
+    geoip_reader = geoip2.database.Reader(GEOIP_CITY_PATH)
+else:
+    geoip_reader = None  # handle missing DB gracefully
 
 # 🏳️ Emoji Flag Generator
 def country_flag(code):
     if not code or len(code) != 2:
         return ""
     return chr(127397 + ord(code.upper()[0])) + chr(127397 + ord(code.upper()[1]))
-
 # 🌍 GeoIP lookup
 @lru_cache(maxsize=10000)
 def get_geoip(ip):
     try:
-        response = geoip_reader.city(ip)
+        response = geoip_reader.city(ip) # type: ignore
         return {
             "country": response.country.name or "Unknown",
             "code": response.country.iso_code or "",
@@ -51,7 +57,7 @@ def render(flows_df, alerts_df, ml_alerts_df, tab_cotainer):
                 height="700px",
                 width="100%",
                 bgcolor="#222222",
-                font_color="white",
+                font_color="white", # type: ignore
                 notebook=False
             )
 
@@ -221,5 +227,5 @@ def render(flows_df, alerts_df, ml_alerts_df, tab_cotainer):
                             pickable=True
                         )
                     ],
-                    tooltip={"text": "{flag} {ip}\n{country}"}
+                    tooltip={"text": "{flag} {ip}\n{country}"} # type: ignore
                 ))
