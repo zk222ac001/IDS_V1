@@ -12,7 +12,6 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 GEOIP_CITY_PATH = os.path.join(PROJECT_ROOT, "database", "GeoLite2-City.mmdb")
-#GEOIP_DB_PATH = "../database/GeoLite2-City.mmdb"
 geoip_reader = geoip2.database.Reader(GEOIP_CITY_PATH)
 
 # ----------- EMOJI FLAG -----------
