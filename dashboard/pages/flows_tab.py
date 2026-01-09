@@ -22,19 +22,19 @@ import pydeck as pdk
 import streamlit as st
 import geoip2.database
 from streamlit_autorefresh import st_autorefresh
-
+import os
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 # Local helper (your project path)
 from dashboard.utils.cleanup_db import cleanup_old_data
 
+# --- Path-safe GeoIP configuration (DEPLOYMENT SAFE) ---------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
+GEOIP_CITY_PATH = os.path.join(PROJECT_ROOT, "database", "GeoLite2-City.mmdb")
+GEOIP_ASN_PATH  = os.path.join(PROJECT_ROOT, "database", "GeoLite2-ASN.mmdb")
 # ----------------- Config / Constants -----------------
-GEOIP_CITY_PATH = "../database/GeoLite2-City.mmdb"
-GEOIP_ASN_PATH = "../database/GeoLite2-ASN.mmdb"
 MAX_GEOIP_ENRICH = 400  # limit lookups to top N unique IPs to keep UI responsive
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
-
-
 # ----------------- Cached helpers ---------------------
 @st.cache_resource
 def get_geoip_readers() -> Optional[dict]:
@@ -341,7 +341,7 @@ def render(flows_df: pd.DataFrame, tab_container) -> None:
             st.markdown("### ⏱️ Flow Activity Over Time")
             if "timestamp" in filtered.columns and filtered["timestamp"].notna().any():
                 timeline_df = (
-                    filtered.groupby(filtered["timestamp"].dt.floor("min")).size().reset_index(name="Flow Count")
+                    filtered.groupby(filtered["timestamp"].dt.floor("min")).size().reset_index(name="Flow Count") # type: ignore
                 )
                 if not timeline_df.empty:
                     st.area_chart(timeline_df.rename(columns={"timestamp": "Time"}).set_index("Time"))
