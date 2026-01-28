@@ -1,4 +1,4 @@
-# AI based Intrusion detection System (IDS) 
+# AI based Intrusion detection System (IDS) - Python Programming
 ## Network Flows :
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/4e5bd56d-e6c5-41c6-a0f6-3531601f587c" />
 
