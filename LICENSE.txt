@@ -1,0 +1,37 @@
+SentinelIDS Commercial License Agreement
+
+Copyright (c) 2026 Your Company Name
+
+IMPORTANT: READ CAREFULLY BEFORE USING THIS SOFTWARE.
+
+This software (“SentinelIDS”) is licensed, not sold.
+
+1. GRANT OF LICENSE
+Upon purchase, you are granted a non-exclusive, non-transferable license
+to install and use SentinelIDS according to your purchased plan.
+
+2. PERMITTED USE
+- Install only on the number of systems allowed by your license
+- Internal business or educational use only
+
+3. PROHIBITED USE
+- Redistribution, resale, sublicensing, or sharing
+- Reverse engineering or source code extraction
+- Using without a valid license key
+- Hosting as a SaaS without written permission
+
+4. OWNERSHIP
+The software, source code, and all intellectual property remain the
+exclusive property of the author.
+
+5. TERMINATION
+This license is automatically terminated if terms are violated.
+
+6. DISCLAIMER
+This software is provided "AS IS" without warranty of any kind.
+The author is not liable for damages or data loss.
+
+7. GOVERNING LAW
+This agreement is governed by the laws of your country.
+
+© 2026 All rights reserved.
